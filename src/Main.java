@@ -20,84 +20,88 @@ import java.util.Date;
 import java.util.List;
 import java.util.stream.Collectors;
 
-public class Main {
-    public static void main(String[] args) {
-        // Прокси логгирует запрос к серверу и ответ от него
-        ServerProxy server = new ServerProxy();
+import java.util.ArrayList;
+import java.util.Date;
+import java.util.List;
+import java.util.stream.Collectors;
 
-        server.SaveUser(1);
-        server.SaveUser(2);
-        server.SaveUser(3);
-
-        server.GetUser(1);
-        server.GetUser(4);
-
-        System.out.println(server.GetLogs());
-    }
-}
-
-abstract class Server {
-    static public boolean SaveUser(int id) {
+class Server {
+    public boolean saveUser(int id) {
+        // Логика сохранения пользователя
         return true;
     }
 
-    static public Object GetUser(int id) {
+    public Object getUser(int id) {
+        // Логика получения пользователя
         return new Object();
     }
 
-    private void UselessMethod() {
-        int abc = 2 * 2 + 2;
-    }
+    // Прочие методы сервера
 }
 
 interface IServerProxy {
-    public boolean SaveUser(int id);
-
-    public Object GetUser(int id);
+    boolean saveUser(int id);
+    Object getUser(int id);
 }
 
 class ServerProxy implements IServerProxy {
-    static private enum Responses {Success, Error}
+    private enum Response { SUCCESS, ERROR }
 
-    private class Logs {
-        public Date date;
-        public String info;
-        public Responses response;
+    private static class LogEntry {
+        private Date date;
+        private String methodName;
+        private Response response;
 
-        Logs(Date date, String info, Responses response) {
-            this.date = date;
-            this.info = info;
+        LogEntry(String methodName, Response response) {
+            this.date = new Date();
+            this.methodName = methodName;
             this.response = response;
         }
 
         @Override
         public String toString() {
-            return "date: " + date + ", info: " + info + ", response: " + response;
+            return "Date: " + date + ", Method: " + methodName + ", Response: " + response;
         }
     }
 
-    private List<Logs> logs = new ArrayList<>();
+    private List<LogEntry> logs = new ArrayList<>();
+    private Server server = new Server();
 
-    public String GetLogs() {
-        return logs.stream().map(Logs::toString)
+    public String getLogs() {
+        return logs.stream().map(LogEntry::toString)
                 .collect(Collectors.joining("\n"));
     }
 
     @Override
-    public boolean SaveUser(int id) {
-        boolean result = Server.SaveUser(id);
-        Responses response = (result == true) ? Responses.Success : Responses.Error;
-        logs.add(new Logs(new Date(), "Called SaveUser method", response));
+    public boolean saveUser(int id) {
+        boolean result = server.saveUser(id);
+        Response response = (result) ? Response.SUCCESS : Response.ERROR;
+        logs.add(new LogEntry("SaveUser", response));
 
         return result;
     }
 
     @Override
-    public Object GetUser(int id) {
-        Object result = Server.GetUser(id);
-        Responses response = (result != null) ? Responses.Success : Responses.Error;
-        logs.add(new Logs(new Date(), "Called GetUser method", response));
+    public Object getUser(int id) {
+        Object result = server.getUser(id);
+        Response response = (result != null) ? Response.SUCCESS : Response.ERROR;
+        logs.add(new LogEntry("GetUser", response));
 
         return result;
+    }
+}
+
+public class Main {
+    public static void main(String[] args) {
+        IServerProxy server = new ServerProxy();
+
+        server.saveUser(1);
+        server.saveUser(2);
+        server.saveUser(3);
+
+        server.getUser(1);
+        server.getUser(4);
+
+        System.out.println(((ServerProxy) server).getLogs());
     }
 }
